@@ -1,5 +1,5 @@
 # Audio Notes
-
+🌐 Live Website: https://gnani-ai-sol.vercel.app/
 Upload an audio file of any length and get a transcript (Gnani ASR) and a summary (Gemini).
 
 - **Frontend:** Next.js 14 (App Router, TypeScript), deployed on Vercel
