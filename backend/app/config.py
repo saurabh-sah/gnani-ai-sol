@@ -12,7 +12,9 @@ def _env(name: str, default: str | None = None, required: bool = False) -> str:
 DATABASE_URL = _env("DATABASE_URL", required=True)
 
 # Supabase Storage (bucket must exist and be private)
-SUPABASE_URL = _env("SUPABASE_URL", required=True).rstrip("/")
+# Accept common copy-paste mistakes: spaces/quotes, or a storage/S3 endpoint instead of the project URL.
+SUPABASE_URL = _env("SUPABASE_URL", required=True).strip().strip('"\'').split("/storage/v1")[0].rstrip("/")
+SUPABASE_URL = SUPABASE_URL.replace(".storage.supabase.co", ".supabase.co")
 SUPABASE_SERVICE_KEY = _env("SUPABASE_SERVICE_KEY", required=True)
 SUPABASE_BUCKET = _env("SUPABASE_BUCKET", "audio")
 

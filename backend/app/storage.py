@@ -27,14 +27,20 @@ def _object_path(path: str) -> str:
 
 def create_signed_upload_url(path: str) -> str:
     """Returns a full URL the browser can PUT the file to (valid for 2 hours)."""
-    r = httpx.post(f"{_BASE}/object/upload/sign/{_object_path(path)}", headers=_HEADERS, timeout=20)
+    try:
+        r = httpx.post(f"{_BASE}/object/upload/sign/{_object_path(path)}", headers=_HEADERS, timeout=20)
+    except httpx.HTTPError as exc:
+        raise StorageError(f"cannot connect to storage at {config.SUPABASE_URL} ({exc.__class__.__name__})")
     if r.status_code >= 400:
         raise StorageError(f"Could not create upload URL ({r.status_code}): {r.text[:200]}")
     return f"{_BASE}{r.json()['url']}"
 
 
 def object_exists(path: str) -> bool:
-    r = httpx.head(f"{_BASE}/object/{_object_path(path)}", headers=_HEADERS, timeout=20)
+    try:
+        r = httpx.head(f"{_BASE}/object/{_object_path(path)}", headers=_HEADERS, timeout=20)
+    except httpx.HTTPError as exc:
+        raise StorageError(f"cannot connect to storage ({exc.__class__.__name__})")
     return r.status_code == 200
 
 

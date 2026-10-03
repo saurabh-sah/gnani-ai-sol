@@ -6,8 +6,9 @@ import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -30,7 +31,26 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Audio Notes API", lifespan=lifespan)
+
+
+# Registered before CORS so it sits *inside* the CORS layer: an unexpected crash still
+# returns JSON with CORS headers, and the browser shows the real error instead of
+# a generic "can't reach the server".
+@app.middleware("http")
+async def catch_unhandled(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger("api").exception("unhandled error on %s", request.url.path)
+        return JSONResponse(status_code=500, content={"detail": f"Internal error: {exc.__class__.__name__}: {exc}"})
+
+
 app.add_middleware(CORSMiddleware, allow_origins=config.CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+
+
+@app.exception_handler(storage.StorageError)
+async def storage_error_handler(request: Request, exc: storage.StorageError):
+    return JSONResponse(status_code=502, content={"detail": f"Storage problem: {exc}"})
 
 
 # ---------------------------------------------------------------- schemas
